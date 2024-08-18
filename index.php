@@ -32,6 +32,18 @@ $PAGE->set_heading(get_string('pluginname', 'local_greetings'));
 
 $messageform = new \local_greetings\form\message_form();
 
+if ($data = $messageform->get_data()) {
+    $message = required_param('message', PARAM_TEXT);
+
+    if (!empty($message)) {
+        $record = new stdClass;
+        $record->message = $message;
+        $record->timecreated = time();
+
+        $DB->insert_record('local_greetings_messages', $record);
+    }
+}
+
 echo $OUTPUT->header();
 
 if(isloggedin()) {
@@ -39,10 +51,18 @@ if(isloggedin()) {
 } else {
     echo get_string('greetinguser', 'local_greetings');
 }
+
 $messageform->display();
-if ($data = $messageform->get_data()) {
-    $message = required_param('message', PARAM_TEXT);
-    echo $OUTPUT->heading($message, 4);
+$messages = $DB->get_records('local_greetings_messages');
+foreach ($messages as $m) {
+    echo html_writer::start_tag('div', ['class' => 'card']);
+    echo html_writer::start_tag('div', ['class' => 'card-body']);
+    echo html_writer::tag('p', $m->message, ['class' => 'card-text']);
+    echo html_writer::start_tag('p', ['class' => 'card-text']);
+    echo html_writer::tag('small', userdate($m->timecreated), ['class' => 'text-muted']);
+    echo html_writer::end_tag('p');
+    echo html_writer::end_tag('div');
+    echo html_writer::end_tag('div');
 }
 
 echo $OUTPUT->footer();
