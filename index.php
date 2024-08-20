@@ -81,18 +81,23 @@ if ($allowpost) {
     $messageform->display();
 }
 
-$userfields = \core_user\fields::for_name()->with_identity($context);
-$userfieldssql = $userfields->get_sql('u');
-
-$sql = "SELECT m.id, m.message, m.timecreated, m.userid {$userfieldssql->selects}
-          FROM {local_greetings_messages} m
-     LEFT JOIN {user} u ON u.id = m.userid
-      ORDER BY timecreated DESC";
-
 if ($viewmessages) {
+    $userfields = \core_user\fields::for_name()->with_identity($context);
+    $userfieldssql = $userfields->get_sql('u');
+
+    $sql = "SELECT m.id, m.message, m.timecreated, m.userid {$userfieldssql->selects}
+            FROM {local_greetings_messages} m
+        LEFT JOIN {user} u ON u.id = m.userid
+        ORDER BY timecreated DESC";
+
     $messages = $DB->get_records_sql($sql);
+
+    echo $OUTPUT->box_start('card-columns');
+
+    $cardbackgroundcolor = get_config('local_greetings', 'messagecardbgcolor');
+
     foreach ($messages as $m) {
-        echo html_writer::start_tag('div', ['class' => 'card']);
+        echo html_writer::start_tag('div', ['class' => 'card', 'style' => "background: $cardbackgroundcolor"]);
         echo html_writer::start_tag('div', ['class' => 'card-body']);
         echo html_writer::tag('p', format_text($m->message, FORMAT_PLAIN), ['class' => 'card-text']);
         echo html_writer::tag('p', get_string('postedby', 'local_greetings', $m->firstname), ['class' => 'card-text']);
@@ -113,6 +118,8 @@ if ($viewmessages) {
         echo html_writer::end_tag('div');
         echo html_writer::end_tag('div');
     }
+
+    echo $OUTPUT->box_end();
 }
 
 echo $OUTPUT->footer();
