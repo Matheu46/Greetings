@@ -35,9 +35,13 @@ if (isguestuser()) {
     throw new moodle_exception('noguest');
 }
 
+$allowpost = has_capability('local/greetings:postmessages', $context);
+$viewmessages = has_capability('local/greetings:viewmessages', $context);
+
 $messageform = new \local_greetings\form\message_form();
 
 if ($data = $messageform->get_data()) {
+    require_capability('local/greetings:postmessages', $context);
     $message = required_param('message', PARAM_TEXT);
 
     if (!empty($message)) {
@@ -58,7 +62,9 @@ if(isloggedin()) {
     echo get_string('greetinguser', 'local_greetings');
 }
 
-$messageform->display();
+if ($allowpost) {
+    $messageform->display();
+}
 
 $userfields = \core_user\fields::for_name()->with_identity($context);
 $userfieldssql = $userfields->get_sql('u');
@@ -68,17 +74,19 @@ $sql = "SELECT m.id, m.message, m.timecreated, m.userid {$userfieldssql->selects
      LEFT JOIN {user} u ON u.id = m.userid
       ORDER BY timecreated DESC";
 
-$messages = $DB->get_records_sql($sql);
-foreach ($messages as $m) {
-    echo html_writer::start_tag('div', ['class' => 'card']);
-    echo html_writer::start_tag('div', ['class' => 'card-body']);
-    echo html_writer::tag('p', format_text($m->message, FORMAT_PLAIN), ['class' => 'card-text']);
-    echo html_writer::tag('p', get_string('postedby', 'local_greetings', $m->firstname), ['class' => 'card-text']);
-    echo html_writer::start_tag('p', ['class' => 'card-text']);
-    echo html_writer::tag('small', userdate($m->timecreated), ['class' => 'text-muted']);
-    echo html_writer::end_tag('p');
-    echo html_writer::end_tag('div');
-    echo html_writer::end_tag('div');
+if ($viewmessages) {
+    $messages = $DB->get_records_sql($sql);
+    foreach ($messages as $m) {
+        echo html_writer::start_tag('div', ['class' => 'card']);
+        echo html_writer::start_tag('div', ['class' => 'card-body']);
+        echo html_writer::tag('p', format_text($m->message, FORMAT_PLAIN), ['class' => 'card-text']);
+        echo html_writer::tag('p', get_string('postedby', 'local_greetings', $m->firstname), ['class' => 'card-text']);
+        echo html_writer::start_tag('p', ['class' => 'card-text']);
+        echo html_writer::tag('small', userdate($m->timecreated), ['class' => 'text-muted']);
+        echo html_writer::end_tag('p');
+        echo html_writer::end_tag('div');
+        echo html_writer::end_tag('div');
+    }
 }
 
 echo $OUTPUT->footer();
